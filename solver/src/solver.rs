@@ -80,6 +80,7 @@ pub fn create(
     disabled_one_inch_protocols: Vec<String>,
     solver_address: H160,
     paraswap_slippage_bps: usize,
+    disabled_paraswap_dexs: Vec<String>,
 ) -> Result<Vec<Box<dyn Solver>>> {
     // Tiny helper function to help out with type inference. Otherwise, all
     // `Box::new(...)` expressions would have to be cast `as Box<dyn Solver>`.
@@ -138,6 +139,7 @@ pub fn create(
                 solver_address,
                 token_info_fetcher.clone(),
                 paraswap_slippage_bps,
+                disabled_paraswap_dexs.clone(),
             ))),
         })
         .collect()
