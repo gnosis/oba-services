@@ -38,6 +38,7 @@ pub struct ParaswapSolver {
     #[derivative(Debug = "ignore")]
     client: Box<dyn ParaswapApi + Send + Sync>,
     slippage_bps: usize,
+    disabled_paraswap_dexs: Vec<String>,
 }
 
 impl ParaswapSolver {
@@ -47,6 +48,7 @@ impl ParaswapSolver {
         solver_address: H160,
         token_info: Arc<dyn TokenInfoFetching>,
         slippage_bps: usize,
+        disabled_paraswap_dexs: Vec<String>,
     ) -> Self {
         let allowance_fetcher = AllowanceManager::new(web3, settlement_contract.address());
         Self {
@@ -56,6 +58,7 @@ impl ParaswapSolver {
             allowance_fetcher: Box::new(allowance_fetcher),
             client: Box::new(DefaultParaswapApi::default()),
             slippage_bps,
+            disabled_paraswap_dexs,
         }
     }
 }
@@ -163,6 +166,7 @@ impl ParaswapSolver {
             to_decimals: decimals(token_info, &order.buy_token)?,
             amount,
             side,
+            exclude_dexs: Some(self.disabled_paraswap_dexs.clone()),
         };
         let price_response = self.client.price(price_query).await?;
         Ok((price_response, amount))
@@ -303,6 +307,7 @@ mod tests {
             allowance_fetcher,
             settlement_contract: dummy_contract!(GPv2Settlement, H160::zero()),
             slippage_bps: 10,
+            disabled_paraswap_dexs: vec![],
         };
 
         let order = LimitOrder::default();
@@ -350,6 +355,7 @@ mod tests {
             allowance_fetcher,
             settlement_contract: dummy_contract!(GPv2Settlement, H160::zero()),
             slippage_bps: 10,
+            disabled_paraswap_dexs: vec![],
         };
 
         let order_passing_limit = LimitOrder {
@@ -440,6 +446,7 @@ mod tests {
             allowance_fetcher,
             settlement_contract: dummy_contract!(GPv2Settlement, H160::zero()),
             slippage_bps: 10,
+            disabled_paraswap_dexs: vec![],
         };
 
         let order = LimitOrder {
@@ -515,6 +522,7 @@ mod tests {
             allowance_fetcher,
             settlement_contract: dummy_contract!(GPv2Settlement, H160::zero()),
             slippage_bps: 1000, // 10%
+            disabled_paraswap_dexs: vec![],
         };
 
         let sell_order = LimitOrder {
@@ -555,7 +563,7 @@ mod tests {
         let weth = WETH9::deployed(&web3).await.unwrap();
         let gno = shared::addr!("6810e776880c02933d47db1b9fc05908e5386b96");
 
-        let solver = ParaswapSolver::new(web3, settlement, solver, token_info_fetcher, 0);
+        let solver = ParaswapSolver::new(web3, settlement, solver, token_info_fetcher, 0, vec![]);
 
         let settlement = solver
             .settle_order(
